@@ -37,26 +37,26 @@ td,th{padding:10px;border:1px solid #ddd;text-align:center}
 </div>
 
 <script>
-const supabase = supabase.createClient("https://sqyftyxqfptggpvwdvlm.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxeWZ0eXhxZnB0Z2dwdndkdmxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MDU3MDEsImV4cCI6MjA4MDQ4MTcwMX0.TO95Q_mRrp7lfwexCnooVuTKy3fWavRaHFiSvTr6KQs");
+const supabase = supabase.createClient(
+  "https://sqyftyxqfptggpvwdvlm.supabase.co",
+  "eyJhbGciOiJIUzI…..(dst)"
+);
 
 // --- LOGIN ADMIN ---
 async function login(){
     let email=document.getElementById("email").value;
     let pass=document.getElementById("pass").value;
 
-    let { data } = await supabase.from("admin_users").select("*").eq("email",email).single();
-    if(!data) return alert("Akun tidak ditemukan!");
+    // cek email
+    let { data:user } = await supabase.from("admin_users").select("*").eq("email",email).single();
+    if(!user) return alert("Akun tidak ditemukan!");
 
-    let ok = await bcryptVerify(pass,data.password);
+    // cek password BCRYPT CORRECT!
+    let ok = await bcrypt.compare(pass,user.password);
     if(!ok) return alert("Password salah!");
 
-    localStorage.setItem("admin","true");
+    localStorage.setItem("admin", "true");
     loadPanel();
-}
-
-// BCRYPT VERIFY
-async function bcryptVerify(pass, hash){
-    return await dcodeIO.bcrypt.compare(pass,hash);
 }
 
 // CEK LOGIN
@@ -70,26 +70,25 @@ async function loadPanel(){
 
 // --- CRUD FILE ---
 async function addFile(){
-    let j=document.getElementById("judul").value,
-        f=document.getElementById("foto").value,
-        l=document.getElementById("link").value;
-
-    await supabase.from("files").insert([{title:j,image_url:f,file_url:l}]);
+    await supabase.from("files").insert([{
+        title:document.getElementById("judul").value,
+        image_url:document.getElementById("foto").value,
+        file_url:document.getElementById("link").value,
+    }]);
     loadFiles();
 }
 
 async function loadFiles(){
     let {data}=await supabase.from("files").select("*");
     let t=document.getElementById("table");
-    t.innerHTML="<tr><th>Judul</th><th>Hapus</th></tr>";
-
+    t.innerHTML=`<tr><th>Judul</th><th>Hapus</th></tr>`;
     data.forEach(x=>{
         t.innerHTML+=`
         <tr>
             <td><a href="${x.file_url}" target="_blank">${x.title}</a></td>
             <td><button onclick="del('${x.id}')">Hapus</button></td>
         </tr>`;
-    })
+    });
 }
 
 async function del(id){
@@ -98,6 +97,6 @@ async function del(id){
 }
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/bcryptjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/bcryptjs/dist/bcrypt.min.js"></script>
 </body>
 </html>
