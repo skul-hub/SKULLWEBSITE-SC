@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Admin Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<style>
+body{font-family:Arial;background:#eef1f4;margin:0}
+.container{width:90%;max-width:600px;margin:auto;padding-top:40px}
+.box{background:#fff;padding:20px;border-radius:10px;box-shadow:0 0 15px rgba(0,0,0,.1)}
+input{width:100%;padding:10px;margin:5px 0;border-radius:5px;border:1px solid #aaa}
+button{padding:10px 15px;border:none;border-radius:5px;background:#0066ff;color:white;font-weight:bold;cursor:pointer;width:100%}
+.table{margin-top:20px;border-collapse:collapse;width:100%}
+td,th{padding:10px;border:1px solid #ddd;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div id="loginBox" class="box">
+        <h3>Login Admin</h3>
+        <input id="email" placeholder="Email admin">
+        <input id="pass" type="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+    </div>
+
+    <div id="panel" class="box" style="display:none">
+        <h3>Tambah File</h3>
+        <input id="judul" placeholder="Judul file">
+        <input id="foto" placeholder="Link gambar">
+        <input id="link" placeholder="Link download">
+        <button onclick="addFile()">TAMBAH</button>
+
+        <h3 style="margin-top:25px">Data File</h3>
+        <table class="table" id="table"></table>
+    </div>
+</div>
+
+<script>
+const supabase = supabase.createClient("https://sqyftyxqfptggpvwdvlm.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxeWZ0eXhxZnB0Z2dwdndkdmxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MDU3MDEsImV4cCI6MjA4MDQ4MTcwMX0.TO95Q_mRrp7lfwexCnooVuTKy3fWavRaHFiSvTr6KQs");
+
+// --- LOGIN ADMIN ---
+async function login(){
+    let email=document.getElementById("email").value;
+    let pass=document.getElementById("pass").value;
+
+    let { data } = await supabase.from("admin_users").select("*").eq("email",email).single();
+    if(!data) return alert("Akun tidak ditemukan!");
+
+    let ok = await bcryptVerify(pass,data.password);
+    if(!ok) return alert("Password salah!");
+
+    localStorage.setItem("admin","true");
+    loadPanel();
+}
+
+// BCRYPT VERIFY
+async function bcryptVerify(pass, hash){
+    return await dcodeIO.bcrypt.compare(pass,hash);
+}
+
+// CEK LOGIN
+if(localStorage.getItem("admin")) loadPanel();
+
+async function loadPanel(){
+    document.getElementById("loginBox").style.display="none";
+    document.getElementById("panel").style.display="block";
+    loadFiles();
+}
+
+// --- CRUD FILE ---
+async function addFile(){
+    let j=document.getElementById("judul").value,
+        f=document.getElementById("foto").value,
+        l=document.getElementById("link").value;
+
+    await supabase.from("files").insert([{title:j,image_url:f,file_url:l}]);
+    loadFiles();
+}
+
+async function loadFiles(){
+    let {data}=await supabase.from("files").select("*");
+    let t=document.getElementById("table");
+    t.innerHTML="<tr><th>Judul</th><th>Hapus</th></tr>";
+
+    data.forEach(x=>{
+        t.innerHTML+=`
+        <tr>
+            <td><a href="${x.file_url}" target="_blank">${x.title}</a></td>
+            <td><button onclick="del('${x.id}')">Hapus</button></td>
+        </tr>`;
+    })
+}
+
+async function del(id){
+    await supabase.from("files").delete().eq("id",id);
+    loadFiles();
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bcryptjs"></script>
+</body>
+</html>
